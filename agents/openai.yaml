@@ -1,0 +1,8 @@
+interface:
+  display_name: "GPT Image 2"
+  short_description: "帮用户生成图片、改图、换背景或继续修图"
+  brand_color: "#0F766E"
+  default_prompt: "Use $gpt-image-2 when the user wants to generate a new image, create a poster draft or illustration, or edit an existing image with changes like background replacement, expansion, restyling, or continued revision."
+
+policy:
+  allow_implicit_invocation: true
