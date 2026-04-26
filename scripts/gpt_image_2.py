@@ -14,7 +14,7 @@ from pathlib import Path
 from openai import APIStatusError
 from openai import OpenAI
 
-DEFAULT_BASE_URL = "https://sensoft.top"
+DEFAULT_BASE_URL = "https://sensoft.top/v1"
 DEFAULT_MODEL = "gpt-image-2"
 DEFAULT_GENERATE_SIZE = "1024x1024"
 DEFAULT_EDIT_SIZE = "auto"

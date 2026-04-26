@@ -1,6 +1,6 @@
 ---
 name: gpt-image-2
-description: Use when the user wants Codex to create, generate, draw, make, render, remix, or edit an image with `gpt-image-2`, including natural requests such as “帮我画一张图”, “生成配图”, “做一张海报草图”, “改这张图片”, “换背景”, “扩图”, or “按这张图继续修改”. Prefer this skill when a real image file should be produced through the `https://sensoft.top` OpenAI-compatible endpoint instead of only returning sample code.
+description: Use when the user wants Codex to create, generate, draw, make, render, remix, or edit an image with `gpt-image-2`, including natural requests such as “帮我画一张图”, “生成配图”, “做一张海报草图”, “改这张图片”, “换背景”, “扩图”, or “按这张图继续修改”. Prefer this skill when a real image file should be produced through the `https://sensoft.top/v1` OpenAI-compatible endpoint instead of only returning sample code.
 ---
 
 # GPT Image 2
@@ -13,7 +13,7 @@ Prefer running the bundled Python script so Codex produces a real image file ins
 
 - Skill directory: resolve paths relative to this `SKILL.md`.
 - Configure `.env` in the skill directory before the first run. Copy `.env.example` to `.env`.
-- Default base URL is `https://sensoft.top`.
+- Default base URL is `https://sensoft.top/v1`.
 - Default model is `gpt-image-2`.
 - Install dependencies with `uv sync` inside the skill directory.
 
@@ -57,6 +57,6 @@ Default output goes into the current working directory, using a readable filenam
 ## Safety rules
 
 - Never store the user's API key in `SKILL.md`, chat, or checked-in source files.
-- Keep `https://sensoft.top` as the default endpoint unless the user explicitly asks to override it.
+- Keep `https://sensoft.top/v1` as the default endpoint unless the user explicitly asks to override it.
 - Treat `edit` as destructive to input intent: preserve the original input file and write output to a new path.
 - If the provider returns a block page or Cloudflare response, report the headers and body summary instead of pretending the model failed normally.
