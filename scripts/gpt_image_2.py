@@ -5,6 +5,8 @@ import base64
 import json
 import mimetypes
 import re
+import struct
+import sys
 import urllib.error
 import urllib.request
 from contextlib import ExitStack
@@ -17,7 +19,6 @@ from openai import OpenAI
 DEFAULT_BASE_URL = "https://sensoft.top/v1"
 DEFAULT_MODEL = "gpt-image-2"
 DEFAULT_GENERATE_SIZE = "1024x1024"
-DEFAULT_EDIT_SIZE = "auto"
 DEFAULT_QUALITY = "medium"
 DEFAULT_OUTPUT_FORMAT = "png"
 DEFAULT_TIMEOUT = 420.0
@@ -132,6 +133,100 @@ def slugify_prompt(prompt: str, max_length: int = 10) -> str:
     return text[:max_length].rstrip("-_") or "image"
 
 
+def detect_image_size(image_path: str) -> str:
+    with open(image_path, "rb") as image_file:
+        header = image_file.read(32)
+        image_file.seek(0)
+
+        if header.startswith(b"\x89PNG\r\n\x1a\n"):
+            image_file.seek(16)
+            width, height = struct.unpack(">II", image_file.read(8))
+            return f"{width}x{height}"
+
+        if header.startswith(b"\xff\xd8"):
+            image_file.seek(2)
+            while True:
+                marker_prefix = image_file.read(1)
+                if not marker_prefix:
+                    break
+                if marker_prefix != b"\xff":
+                    continue
+
+                marker = image_file.read(1)
+                while marker == b"\xff":
+                    marker = image_file.read(1)
+                if not marker or marker in {b"\xd8", b"\xd9"}:
+                    continue
+
+                marker_value = marker[0]
+                if marker_value in {0x01, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7}:
+                    continue
+
+                segment_length = struct.unpack(">H", image_file.read(2))[0]
+                if marker_value in {
+                    0xC0,
+                    0xC1,
+                    0xC2,
+                    0xC3,
+                    0xC5,
+                    0xC6,
+                    0xC7,
+                    0xC9,
+                    0xCA,
+                    0xCB,
+                    0xCD,
+                    0xCE,
+                    0xCF,
+                }:
+                    image_file.read(1)
+                    height, width = struct.unpack(">HH", image_file.read(4))
+                    return f"{width}x{height}"
+                image_file.seek(segment_length - 2, 1)
+
+        if header.startswith(b"RIFF") and header[8:12] == b"WEBP":
+            chunk_type = header[12:16]
+            if chunk_type == b"VP8X":
+                image_file.seek(24)
+                width_bytes = image_file.read(3)
+                height_bytes = image_file.read(3)
+                width = int.from_bytes(width_bytes, "little") + 1
+                height = int.from_bytes(height_bytes, "little") + 1
+                return f"{width}x{height}"
+            if chunk_type == b"VP8 ":
+                image_file.seek(26)
+                width, height = struct.unpack("<HH", image_file.read(4))
+                return f"{width & 0x3FFF}x{height & 0x3FFF}"
+            if chunk_type == b"VP8L":
+                image_file.seek(21)
+                bits = int.from_bytes(image_file.read(4), "little")
+                width = (bits & 0x3FFF) + 1
+                height = ((bits >> 14) & 0x3FFF) + 1
+                return f"{width}x{height}"
+
+    raise ValueError(f"Unsupported or unreadable image format: {image_path}")
+
+
+def resolve_edit_size(args: argparse.Namespace) -> str | None:
+    if args.size:
+        return args.size
+
+    try:
+        detected_sizes = [detect_image_size(path) for path in args.image]
+    except ValueError as err:
+        print(f"Warning: {err}. The request will omit size.", file=sys.stderr)
+        return None
+
+    first_size = detected_sizes[0]
+    if all(size == first_size for size in detected_sizes[1:]):
+        return first_size
+
+    print(
+        "Warning: input images have different sizes, so the request will omit size.",
+        file=sys.stderr,
+    )
+    return None
+
+
 def resolve_target_path(
     output: str | None,
     output_dir: Path,
@@ -232,6 +327,8 @@ def run_edit(args: argparse.Namespace, script_dir: Path, config: dict[str, str])
     base_url = args.base_url or config["base_url"]
     client = build_client(base_url, args.api_key or config["api_key"], timeout)
 
+    edit_size = resolve_edit_size(args)
+
     with ExitStack() as stack:
         images = [stack.enter_context(open(path, "rb")) for path in args.image]
         mask = stack.enter_context(open(args.mask, "rb")) if args.mask else None
@@ -240,12 +337,13 @@ def run_edit(args: argparse.Namespace, script_dir: Path, config: dict[str, str])
             "model": model,
             "image": images if len(images) > 1 else images[0],
             "prompt": args.prompt,
-            "size": args.size,
             "quality": args.quality,
             "output_format": args.output_format,
             "background": args.background,
             "n": args.n,
         }
+        if edit_size:
+            request["size"] = edit_size
         if mask:
             request["mask"] = mask
         if args.input_fidelity:
@@ -299,7 +397,10 @@ def build_parser(script_dir: Path, config: dict[str, str]) -> argparse.ArgumentP
     )
     edit.add_argument("--prompt", required=True, help="Editing instructions for the model.")
     edit.add_argument("--mask", help="Optional mask image path.")
-    edit.add_argument("--size", default=DEFAULT_EDIT_SIZE)
+    edit.add_argument(
+        "--size",
+        help="Optional output size. If omitted, the script uses the original image size.",
+    )
     edit.add_argument("--quality", default=DEFAULT_QUALITY)
     edit.add_argument(
         "--output-format",

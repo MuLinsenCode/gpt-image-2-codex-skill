@@ -31,7 +31,7 @@ For editing:
 - `image` - required input image path
 - `prompt` - required
 - `mask` - optional mask image path
-- `size` - optional, default `auto`
+- `size` - optional, default to the original input image size
 - `quality` - optional, default `medium`
 - `output_format` - optional, default `png`
 
@@ -59,4 +59,5 @@ Default output goes into the current working directory, using a readable filenam
 - Never store the user's API key in `SKILL.md`, chat, or checked-in source files.
 - Keep `https://sensoft.top/v1` as the default endpoint unless the user explicitly asks to override it.
 - Treat `edit` as destructive to input intent: preserve the original input file and write output to a new path.
+- For `edit`, prefer the original image size unless the user explicitly asks for a different size.
 - If the provider returns a block page or Cloudflare response, report the headers and body summary instead of pretending the model failed normally.
