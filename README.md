@@ -76,7 +76,7 @@ uv run --project ~/.codex/skills/gpt-image-2 \
   edit --image /path/to/input.png --prompt "把背景改成雪山黄昏" --paths-only
 ```
 
-编辑图片时，如果你没有显式传 `--size`，脚本会默认读取原图尺寸并把这个尺寸传给接口；只有当你明确传了 `--size` 时，才会优先使用你指定的尺寸。
+生成图片和编辑图片在默认情况下都会传 `size=auto`；只有当你明确传了 `--size` 时，才会优先使用你指定的尺寸。
 
 ## Codex 会在什么场景下触发这个 Skill
 

@@ -22,18 +22,22 @@ Prefer running the bundled Python script so Codex produces a real image file ins
 For generation:
 
 - `prompt` - required
-- `size` - optional, default `1024x1024`
+- `size` - optional, default `auto`
 - `quality` - optional, default `medium`
 - `output_format` - optional, default `png`
+
+For most generation requests, prefer keeping `size=auto` unless the user explicitly asks for a specific size or aspect ratio.
 
 For editing:
 
 - `image` - required input image path
 - `prompt` - required
 - `mask` - optional mask image path
-- `size` - optional, default to the original input image size
+- `size` - optional, default `auto`
 - `quality` - optional, default `medium`
 - `output_format` - optional, default `png`
+
+For most editing requests, prefer keeping `size=auto` unless the user explicitly asks for a specific size or aspect ratio.
 
 If the user asks to edit an image but does not give an input image path, stop and ask for that path instead of guessing.
 
@@ -59,5 +63,5 @@ Default output goes into the current working directory, using a readable filenam
 - Never store the user's API key in `SKILL.md`, chat, or checked-in source files.
 - Keep `https://sensoft.top/v1` as the default endpoint unless the user explicitly asks to override it.
 - Treat `edit` as destructive to input intent: preserve the original input file and write output to a new path.
-- For `edit`, prefer the original image size unless the user explicitly asks for a different size.
+- Prefer `size=auto` for both generate and edit unless the user clearly asks for a fixed size.
 - If the provider returns a block page or Cloudflare response, report the headers and body summary instead of pretending the model failed normally.
